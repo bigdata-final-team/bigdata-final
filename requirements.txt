@@ -13,3 +13,4 @@ plotly
 jupyterlab
 ipykernel
 openpyxl
+prophet
