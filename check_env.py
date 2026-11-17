@@ -1,0 +1,13 @@
+"""Smoke test: every library imports and a model trains on a toy dataset."""
+import lightgbm, matplotlib, numpy, pandas, polars, pyarrow, scipy, seaborn, sklearn, statsmodels, xgboost
+from sklearn.datasets import load_iris
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+
+for m in (numpy, pandas, polars, pyarrow, scipy, statsmodels, sklearn, xgboost, lightgbm, matplotlib, seaborn):
+    print(f"{m.__name__:12} {m.__version__}")
+
+X_tr, X_te, y_tr, y_te = train_test_split(*load_iris(return_X_y=True), random_state=0)
+acc = RandomForestClassifier(random_state=0).fit(X_tr, y_tr).score(X_te, y_te)
+assert acc > 0.9, acc
+print(f"iris RF accuracy: {acc:.3f}  OK")

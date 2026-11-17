@@ -1,0 +1,15 @@
+numpy
+pandas
+polars
+pyarrow
+scipy
+statsmodels
+scikit-learn
+xgboost
+lightgbm
+matplotlib
+seaborn
+plotly
+jupyterlab
+ipykernel
+openpyxl
