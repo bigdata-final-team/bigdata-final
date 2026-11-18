@@ -1,6 +1,26 @@
-# bigdata-final
+<div align="center">
 
-Python 빅데이터 분석 · 기계학습 프로젝트.
+# 📊 bigdata-final
+
+**Python 빅데이터 분석 · 기계학습 프로젝트**
+
+[![CI](https://github.com/bigdata-final-team/bigdata-final/actions/workflows/ci.yml/badge.svg)](https://github.com/bigdata-final-team/bigdata-final/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
+![pandas](https://img.shields.io/badge/pandas-150458?logo=pandas&logoColor=white)
+![scikit-learn](https://img.shields.io/badge/scikit--learn-F7931E?logo=scikitlearn&logoColor=white)
+![Prophet](https://img.shields.io/badge/Prophet-time%20series-0467DF)
+
+[환경](#환경) · [폴더 구조](#폴더-구조) · [작업 흐름](#작업-흐름) · [협업 규칙](CONTRIBUTING.md) · [데이터 출처](#데이터-출처)
+
+</div>
+
+## 팀
+
+| 이름 | GitHub | 담당 |
+|------|--------|------|
+| | [@WoogaJJangka](https://github.com/WoogaJJangka) | |
+| | | |
+| | | |
 
 ## 환경
 
@@ -104,7 +124,7 @@ df = load_raw("sales.csv")
 3. `02_preprocessing`에서 정리한 결과를 `data/processed/`에 저장
 4. `03_modeling`, `04_forecast`에서 processed 데이터로 모델 학습·평가
 5. 반복해서 쓰는 코드는 `src/`로 옮기기
-6. 커밋 후 push: `git add -A; git commit -m "메시지"; git push`
+6. 브랜치에서 커밋·push한 뒤 PR → 팀원 1명 리뷰 → Squash 머지 ([협업 규칙](CONTRIBUTING.md))
 
 ## git에 올라가지 않는 것
 
