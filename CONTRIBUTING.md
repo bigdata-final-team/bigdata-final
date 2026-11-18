@@ -47,5 +47,5 @@ PR과 `main` push마다 GitHub Actions가 두 가지를 검사합니다.
 | 그 밖의 조직 멤버 | read | 조직 기본 권한 |
 
 - 새 팀원 초대: 조직 **People → Invite member**에서 `dev` 팀을 선택합니다.
-- GitHub Actions는 GitHub 공식 액션과 `astral-sh/ruff-action`, `SonarSource/sonarqube-scan-action`만 실행됩니다. 새 액션이 필요하면 소유자가 저장소 **Settings → Actions → General**의 허용 목록에 추가하고, 워크플로에는 태그 대신 커밋 SHA로 적습니다.
+- GitHub Actions는 조직 정책으로 GitHub 공식 액션과 `astral-sh/ruff-action`, `SonarSource/sonarqube-scan-action`만 실행됩니다 (모든 저장소에 적용). 새 액션이 필요하면 소유자가 **조직 Settings → Actions → General**의 허용 목록에 추가하고, 워크플로에는 태그 대신 커밋 SHA로 적습니다.
 - 워크플로의 `GITHUB_TOKEN`은 읽기 전용입니다.
