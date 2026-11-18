@@ -12,6 +12,18 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6  # v3.6.1, .py와 .ipynb 모두 검사
 
+  mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip  # requirements.txt가 바뀔 때만 새로 받음
+      # 로컬과 같은 버전으로 설치해야 타입 검사 결과가 같다
+      - run: pip install -r requirements.txt
+      - run: mypy  # 설정은 pyproject.toml [tool.mypy]
+
   sonar:
     runs-on: ubuntu-latest
     steps:

@@ -44,8 +44,11 @@ conda run -n bigdata python check_env.py
 | 시계열 예측 | prophet |
 | 시각화 | matplotlib, seaborn, plotly |
 | 노트북·엑셀 | jupyterlab, ipykernel, openpyxl |
+| 타입 검사 | mypy, pandas-stubs, types-seaborn |
 
-라이브러리를 추가할 때는 `conda run -n bigdata python -m pip install <패키지>`로 설치한 뒤 `requirements.txt`에도 한 줄 추가합니다.
+`requirements.txt`는 모든 버전을 `==`로 고정합니다. 라이브러리를 추가할 때는 `conda run -n bigdata python -m pip install <패키지>==<버전>`으로 설치하고 `requirements.txt`에 같은 버전으로 한 줄 추가합니다. `check_env.py`가 고정 버전과 설치 버전을 비교해 다르면 알려 줍니다. `python.exe`를 직접 실행하면 env가 활성화되지 않아 Prophet이 실패하므로 꼭 `conda run`으로 실행합니다.
+
+타입 검사는 `conda run -n bigdata mypy`로 돌립니다(설정: `pyproject.toml`). PR마다 CI에서도 같은 검사를 합니다.
 
 한글이 깨지면 `$env:PYTHONIOENCODING='utf-8'`을 먼저 실행합니다.
 

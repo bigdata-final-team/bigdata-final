@@ -1,16 +1,35 @@
-numpy
-pandas
-polars
-pyarrow
-scipy
-statsmodels
-scikit-learn
-xgboost
-lightgbm
-matplotlib
-seaborn
-plotly
-jupyterlab
-ipykernel
-openpyxl
-prophet
+# Python 3.12. 버전을 바꾸면 모든 팀원이 다시 설치해야 하니 PR에 적어 주세요.
+# 확인: conda run -n bigdata python check_env.py
+
+# 데이터 처리
+numpy==2.5.5
+pandas==3.1.1
+polars==2.1.0
+pyarrow==26.0.1
+
+# 통계
+scipy==1.18.1
+statsmodels==0.15.0
+
+# 기계학습
+scikit-learn==1.9.1
+xgboost==3.4.1
+lightgbm==4.7.0
+
+# 시계열 예측
+prophet==1.5.0
+
+# 시각화
+matplotlib==3.11.2
+seaborn==0.13.2
+plotly==7.1.0
+
+# 노트북·엑셀
+jupyterlab==4.6.6
+ipykernel==7.4.0
+openpyxl==3.1.5
+
+# 타입 검사 (mypy, CI에서도 사용)
+mypy==2.4.1
+pandas-stubs==3.1.0.261029
+types-seaborn==0.13.2.20240417
