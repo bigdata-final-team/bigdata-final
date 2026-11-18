@@ -18,7 +18,7 @@
 
 | 이름 | GitHub | 담당 |
 |------|--------|------|
-| | [@WoogaJJangka](https://github.com/WoogaJJangka) | |
+| 전시원 | [@WoogaJJangka](https://github.com/WoogaJJangka) | 팀장|
 | | | |
 | | | |
 
