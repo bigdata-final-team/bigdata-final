@@ -7,7 +7,7 @@
 - [ ] 노트북은 커널 재시작 후 처음부터 끝까지 실행됨 (Restart & Run All)
 - [ ] `data/raw/` 원본을 덮어쓰지 않음, 새 데이터는 README **데이터 출처**에 기록
 - [ ] 새 라이브러리는 `requirements.txt`에 추가
-- [ ] CI(ruff) 통과
+- [ ] CI(ruff, SonarQube Cloud) 통과
 
 ## 리뷰어가 볼 곳
 

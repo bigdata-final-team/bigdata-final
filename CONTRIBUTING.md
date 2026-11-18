@@ -31,4 +31,9 @@
 
 ## 코드 검사
 
-PR과 `main` push마다 GitHub Actions가 [ruff](https://docs.astral.sh/ruff/)로 `.py`와 `.ipynb`를 검사합니다 (미사용 import, 정의 안 된 변수, 문법 오류 등). 실패하면 Actions 탭에서 어느 줄인지 확인하고 고쳐서 다시 push합니다.
+PR과 `main` push마다 GitHub Actions가 두 가지를 검사합니다.
+
+- **ruff**: `.py`·`.ipynb`의 미사용 import, 정의 안 된 변수, 문법 오류
+- **SonarQube Cloud**: 버그·취약점·중복 코드. 결과는 PR 코멘트와 [SonarCloud 대시보드](https://sonarcloud.io/project/overview?id=bigdata-final-team_bigdata-final)에서 봅니다. Quality Gate가 실패하면 PR에 빨간 표시가 뜹니다.
+
+실패하면 Actions 탭에서 어느 줄인지 확인하고 고쳐서 다시 push합니다.
