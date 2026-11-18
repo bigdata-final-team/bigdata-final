@@ -37,3 +37,15 @@ PR과 `main` push마다 GitHub Actions가 두 가지를 검사합니다.
 - **SonarQube Cloud**: 버그·취약점·중복 코드. 결과는 PR 코멘트와 [SonarCloud 대시보드](https://sonarcloud.io/project/overview?id=bigdata-final-team_bigdata-final)에서 봅니다. Quality Gate가 실패하면 PR에 빨간 표시가 뜹니다.
 
 실패하면 Actions 탭에서 어느 줄인지 확인하고 고쳐서 다시 push합니다.
+
+## 권한
+
+| 대상 | 권한 | 비고 |
+|------|------|------|
+| 조직 소유자 | admin | 조직·저장소 설정, 팀원 초대 |
+| `dev` 팀 | `bigdata-final` write | 팀원은 이 팀에 넣어 초대합니다 |
+| 그 밖의 조직 멤버 | read | 조직 기본 권한 |
+
+- 새 팀원 초대: 조직 **People → Invite member**에서 `dev` 팀을 선택합니다.
+- GitHub Actions는 GitHub 공식 액션과 `astral-sh/ruff-action`, `SonarSource/sonarqube-scan-action`만 실행됩니다. 새 액션이 필요하면 소유자가 저장소 **Settings → Actions → General**의 허용 목록에 추가하고, 워크플로에는 태그 대신 커밋 SHA로 적습니다.
+- 워크플로의 `GITHUB_TOKEN`은 읽기 전용입니다.
