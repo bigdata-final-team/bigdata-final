@@ -1,5 +1,16 @@
 """Smoke test: every library imports and a model trains on a toy dataset."""
-import lightgbm, matplotlib, numpy, pandas, polars, prophet, pyarrow, scipy, seaborn, sklearn, statsmodels, xgboost
+import lightgbm
+import matplotlib
+import numpy
+import pandas
+import polars
+import prophet
+import pyarrow
+import scipy
+import seaborn
+import sklearn
+import statsmodels
+import xgboost
 from prophet import Prophet
 from sklearn.datasets import load_iris
 from sklearn.ensemble import RandomForestClassifier
