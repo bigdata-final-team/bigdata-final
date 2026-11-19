@@ -1,0 +1,14 @@
+[tool.ruff]
+# ruff format이 Markdown 코드 블록까지 고치므로 문서는 대상에서 뺀다 (autofix가 문서를 건드리지 않게)
+extend-exclude = ["*.md"]
+
+[tool.mypy]
+python_version = "3.12"
+files = ["."]
+exclude = ["^data/", "^notebooks/"]
+# 데이터 분석 라이브러리(prophet, statsmodels, lightgbm 등)는 타입 정보가 없어 경고만 늘어난다
+ignore_missing_imports = true
+check_untyped_defs = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+pretty = true
