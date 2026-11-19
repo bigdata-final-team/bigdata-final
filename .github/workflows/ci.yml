@@ -19,9 +19,12 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
         with:
           python-version: "3.12"
-          cache: pip  # requirements.txt가 바뀔 때만 새로 받음
-      # 로컬과 같은 버전으로 설치해야 타입 검사 결과가 같다
-      - run: pip install -r requirements.txt
+          cache: pip  # lock 파일이 바뀔 때만 새로 받음
+          cache-dependency-path: requirements-ci.txt
+      # 로컬과 같은 버전으로 설치해야 타입 검사 결과가 같다. requirements.txt를 해시까지 고정한 lock을 쓴다
+      # (SonarCloud githubactions:S8541 wheel만 설치해 setup.py 실행 차단, S8544 해시 검증).
+      # requirements.txt를 바꾸면 `conda run -n bigdata python scripts/lock_ci.py`로 lock을 다시 만든다
+      - run: pip install --only-binary :all: --require-hashes -r requirements-ci.txt
       - run: mypy  # 설정은 pyproject.toml [tool.mypy]
 
   sonar:
