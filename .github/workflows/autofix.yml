@@ -1,0 +1,40 @@
+name: autofix
+
+# PR 브랜치에 ruff의 기계적 수정(lint --fix, format)을 자동 커밋한다.
+# 검사만 하는 ci.yml의 lint 잡과 별개로 동작한다.
+on:
+  pull_request:
+    paths:
+      - "**.py"
+      - "**.ipynb"
+      - "pyproject.toml"
+      - ".github/workflows/autofix.yml"
+
+# 같은 PR에 연속 push하면 이전 실행은 취소한다
+concurrency:
+  group: autofix-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  ruff-fix:
+    # fork PR은 토큰이 읽기 전용이라 push할 수 없다
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      # 안전한 수정만 적용한다 (unsafe fix는 동작이 바뀔 수 있어 제외)
+      - uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6  # v3.6.1, .py와 .ipynb 모두
+        with:
+          args: check --fix
+        continue-on-error: true  # 자동으로 못 고치는 규칙 위반이 남아도 format과 커밋은 진행. 최종 판정은 ci.yml lint 잡
+      - uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6  # v3.6.1
+        with:
+          args: format
+      - uses: stefanzweifel/git-auto-commit-action@d0b01107b5db882071f96de5dd4b54961ea93f4c  # v7.2.1
+        with:
+          commit_message: "style: ruff auto-fix"
