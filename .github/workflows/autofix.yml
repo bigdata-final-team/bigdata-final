@@ -35,6 +35,14 @@ jobs:
       - uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6  # v3.6.1
         with:
           args: format
-      - uses: stefanzweifel/git-auto-commit-action@d0b01107b5db882071f96de5dd4b54961ea93f4c  # v7.2.1
-        with:
-          commit_message: "style: ruff auto-fix"
+      # org의 Actions 허용 목록 밖의 서드파티 액션은 쓸 수 없어 git 명령으로 직접 커밋한다
+      - name: 변경분이 있으면 커밋하고 push
+        run: |
+          if git diff --quiet; then
+            echo "수정할 것 없음"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "style: ruff auto-fix"
+          git push
