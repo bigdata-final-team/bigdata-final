@@ -1,3 +1,7 @@
+[tool.ruff]
+# ruff format이 Markdown 코드 블록까지 고치므로 문서는 대상에서 뺀다 (autofix가 문서를 건드리지 않게)
+extend-exclude = ["*.md"]
+
 [tool.mypy]
 python_version = "3.12"
 files = ["."]
