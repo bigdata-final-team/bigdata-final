@@ -31,6 +31,7 @@ jobs:
     permissions:
       contents: write        # 수정 커밋 push
       pull-requests: write   # 라벨과 코멘트
+      issues: write           # 저장소 라벨 생성
     steps:
       - uses: actions/checkout@v4
         with:
