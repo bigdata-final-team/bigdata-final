@@ -15,9 +15,8 @@ concurrency:
   group: autofix-${{ github.event.pull_request.number }}
   cancel-in-progress: true
 
-permissions:
-  contents: write
-  pull-requests: write
+# 최상위에는 권한을 주지 않고, 필요한 잡에만 준다 (SonarQube: write 권한은 잡 단위로)
+permissions: {}
 
 env:
   REVIEW_LABEL: autofix-review
@@ -29,6 +28,9 @@ jobs:
       github.event.action != 'labeled' && github.event.action != 'unlabeled'
       && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
+    permissions:
+      contents: write        # 수정 커밋 push
+      pull-requests: write   # 라벨과 코멘트
     steps:
       - uses: actions/checkout@v4
         with:
@@ -69,6 +71,8 @@ jobs:
     needs: ruff-fix
     if: always() && needs.ruff-fix.result != 'failure' && needs.ruff-fix.result != 'cancelled'
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read  # 라벨 조회만
     steps:
       - name: 확인 대기 라벨이 남아 있으면 실패
         env:
