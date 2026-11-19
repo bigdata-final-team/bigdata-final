@@ -39,8 +39,8 @@ PLATFORMS = [
     "linux_x86_64",
 ]
 # GitHub Actions ubuntu-latest + setup-python 3.12
-LINUX_ENV = {
-    **default_environment(),
+LINUX_ENV: dict[str, str] = {
+    **{k: str(v) for k, v in default_environment().items()},
     "os_name": "posix",
     "sys_platform": "linux",
     "platform_system": "Linux",
@@ -101,7 +101,9 @@ def linux_closure(
         needed.add(name)
         for spec in packages[name]["metadata"].get("requires_dist", []):
             dep = Requirement(spec)
-            envs = [{**LINUX_ENV, "extra": e} for e in sorted(extras) or [""]]
+            envs: list[dict[str, str]] = [
+                {**LINUX_ENV, "extra": e} for e in sorted(extras) or [""]
+            ]
             if dep.marker is None or any(dep.marker.evaluate(env) for env in envs):
                 stack.append(dep)
     return needed, missing
