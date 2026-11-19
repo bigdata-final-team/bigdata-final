@@ -127,7 +127,7 @@ def main() -> int:
     check_versions()
     try:
         check_training()
-    except Exception as exc:  # 라이브러리가 깨졌을 때 원인을 요약에 남긴다
+    except Exception as exc:  # noqa: BLE001 - 라이브러리가 깨졌을 때 원인을 요약에 남긴다
         problems.append(f"동작 테스트 실패: {type(exc).__name__}: {exc}")
 
     section("결과")
