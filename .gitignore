@@ -10,3 +10,4 @@ venv/
 .claude/worktrees/
 data/raw/*
 !data/raw/.gitkeep
+.mypy_cache/
