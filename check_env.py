@@ -24,13 +24,17 @@ def section(title: str) -> None:
 def read_pins(path: Path) -> list[tuple[str, str]]:
     """requirements.txt에서 (패키지, 고정 버전) 목록을 읽는다. 주석과 빈 줄은 건너뛴다."""
     pins: list[tuple[str, str]] = []
-    for lineno, raw in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+    for lineno, raw in enumerate(
+        path.read_text(encoding="utf-8").splitlines(), start=1
+    ):
         line = raw.split("#", 1)[0].strip()
         if not line:
             continue
         name, sep, wanted = line.partition("==")
         if not sep:
-            problems.append(f"requirements.txt {lineno}행 '{line}': 버전이 고정되지 않음 (==버전 필요)")
+            problems.append(
+                f"requirements.txt {lineno}행 '{line}': 버전이 고정되지 않음 (==버전 필요)"
+            )
             continue
         pins.append((name.strip(), wanted.strip()))
     return pins
@@ -52,13 +56,17 @@ def check_python() -> None:
     print(f"실행   {sys.executable}")
     if current[:2] != EXPECTED_PYTHON:
         want = ".".join(map(str, EXPECTED_PYTHON))
-        problems.append(f"Python {want}.x 필요, 현재 {'.'.join(map(str, current))} (conda env 'bigdata'로 실행했는지 확인)")
+        problems.append(
+            f"Python {want}.x 필요, 현재 {'.'.join(map(str, current))} (conda env 'bigdata'로 실행했는지 확인)"
+        )
 
     # python.exe를 직접 실행하면 env가 활성화되지 않아 CmdStan(Prophet)·DLL 경로가 잡히지 않는다.
     conda_prefix = os.environ.get("CONDA_PREFIX")
     print(f"활성 env {conda_prefix or '(없음)'}")
     if not conda_prefix or Path(conda_prefix).resolve() != Path(sys.prefix).resolve():
-        problems.append("conda env가 활성화되지 않음: 'conda run -n bigdata python check_env.py'로 실행")
+        problems.append(
+            "conda env가 활성화되지 않음: 'conda run -n bigdata python check_env.py'로 실행"
+        )
 
 
 def check_versions() -> None:
@@ -79,7 +87,9 @@ def check_versions() -> None:
         else:
             status = "불일치"
             problems.append(f"{name}: 설치 {installed}, 필요 {wanted}")
-        print(f"{name:<{width}}  {wanted:<22}{installed:<22}{installer_of(name):<10}{status}")
+        print(
+            f"{name:<{width}}  {wanted:<22}{installed:<22}{installer_of(name):<10}{status}"
+        )
 
 
 def check_training() -> None:
@@ -91,7 +101,9 @@ def check_training() -> None:
     from sklearn.ensemble import RandomForestClassifier
     from sklearn.model_selection import train_test_split
 
-    x_tr, x_te, y_tr, y_te = train_test_split(*load_iris(return_X_y=True), random_state=0)
+    x_tr, x_te, y_tr, y_te = train_test_split(
+        *load_iris(return_X_y=True), random_state=0
+    )
     acc = RandomForestClassifier(random_state=0).fit(x_tr, y_tr).score(x_te, y_te)
     if acc > 0.9:
         print(f"iris 랜덤포레스트 정확도 {acc:.3f}  OK")
@@ -99,7 +111,9 @@ def check_training() -> None:
         problems.append(f"iris 랜덤포레스트 정확도가 낮음: {acc:.3f}")
 
     # Prophet 학습은 같이 설치되는 CmdStan을 쓰는데, Windows에서 가장 자주 깨지는 부분이다.
-    df = pd.DataFrame({"ds": pd.date_range("2024-01-01", periods=200), "y": np.arange(200) * 0.01})
+    df = pd.DataFrame(
+        {"ds": pd.date_range("2024-01-01", periods=200), "y": np.arange(200) * 0.01}
+    )
     future = pd.DataFrame({"ds": pd.date_range("2024-07-19", periods=30)})
     forecast = Prophet().fit(df).predict(future)
     if len(forecast) == 30:

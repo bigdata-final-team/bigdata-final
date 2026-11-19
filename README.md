@@ -105,6 +105,7 @@ notebooks/
 # src/preprocess.py
 import pandas as pd
 
+
 def load_raw(name: str) -> pd.DataFrame:
     return pd.read_csv(f"../data/raw/{name}")
 ```
