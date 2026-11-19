@@ -51,7 +51,8 @@ jobs:
           PR: ${{ github.event.pull_request.number }}
         run: |
           # 문서 등 다른 파일이 바뀌었더라도 .py/.ipynb만 스테이징한다
-          git add -- '*.py' '*.ipynb'
+          # (매칭 파일이 없는 패턴을 git add에 직접 주면 에러라서 변경된 목록을 먼저 뽑는다)
+          git diff --name-only -z -- '*.py' '*.ipynb' | xargs -0 -r git add --
           if git diff --cached --quiet; then
             echo "수정할 것 없음"
             exit 0
