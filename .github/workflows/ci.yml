@@ -5,28 +5,22 @@ on:
     branches: [main]
   pull_request:
 
+# 워크플로 토큰은 저장소를 읽기만 한다
+permissions:
+  contents: read
+
 jobs:
+  # 필수 체크. .py와 .ipynb의 미사용 import, 정의 안 된 변수, 문법 오류를 잡는다.
+  # 고치는 법: ruff check --fix .  (CONTRIBUTING.md "코드 검사")
   lint:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6  # v3.6.1, .py와 .ipynb 모두 검사
-
-  mypy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0  # v7.1.0
+      - uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6  # v3.6.1
         with:
-          python-version: "3.12"
-          cache: pip  # lock 파일이 바뀔 때만 새로 받음
-          cache-dependency-path: requirements-ci.txt
-      # 로컬과 같은 버전으로 설치해야 타입 검사 결과가 같다. requirements.txt를 해시까지 고정한 lock을 쓴다
-      # (SonarCloud githubactions:S8541 wheel만 설치해 setup.py 실행 차단, S8544 해시 검증).
-      # requirements.txt를 바꾸면 `conda run -n bigdata python scripts/lock_ci.py`로 lock을 다시 만든다
-      - run: "pip install --only-binary :all: --require-hashes -r requirements-ci.txt"  # ':all: '는 따옴표 없으면 YAML 매핑으로 읽힘
-      - run: mypy  # 설정은 pyproject.toml [tool.mypy]
+          version-file: requirements.txt  # 로컬과 같은 ruff 버전으로 검사
 
+  # 필수 체크는 이 잡이 아니라 SonarCloud가 PR에 올리는 "SonarCloud Code Analysis"다
   sonar:
     runs-on: ubuntu-latest
     steps:

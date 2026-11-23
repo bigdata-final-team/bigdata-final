@@ -20,7 +20,6 @@
 |------|--------|------|
 | | [@WoogaJJangka](https://github.com/WoogaJJangka) | |
 | | | |
-| | | |
 
 ## 환경
 
@@ -28,6 +27,7 @@ conda 환경 `bigdata` (Python 3.12)를 사용합니다. conda는 PowerShell에�
 
 ```powershell
 # 처음 한 번만
+git lfs install   # png·jpg·parquet를 Git LFS로 올리기 위해 PC마다 한 번
 conda create -n bigdata -c conda-forge --override-channels python=3.12 pip
 conda run -n bigdata python -m pip install -r requirements.txt
 conda run -n bigdata python -m ipykernel install --user --name bigdata --display-name bigdata
@@ -44,6 +44,7 @@ conda run -n bigdata python check_env.py
 | 시계열 예측 | prophet |
 | 시각화 | matplotlib, seaborn, plotly |
 | 노트북·엑셀 | jupyterlab, ipykernel, openpyxl |
+| 코드 검사 | ruff (CI와 같은 버전), mypy (선택) |
 
 라이브러리를 추가할 때는 `conda run -n bigdata python -m pip install <패키지>`로 설치한 뒤 `requirements.txt`에도 한 줄 추가합니다.
 
@@ -71,7 +72,9 @@ bigdata-final/
 ### data/processed/ — 가공 데이터
 
 - 결측치 처리, 형 변환, 병합 등을 마친 분석용 데이터입니다.
-- 큰 데이터는 csv 대신 **parquet**으로 저장하는 것을 권장합니다. 더 작고 빠르며 자료형이 유지됩니다. parquet 파일은 Git LFS로 관리됩니다.
+- 큰 데이터는 csv 대신 **parquet**으로 저장하는 것을 권장합니다. 더 작고 빠르며 자료형이 유지됩니다. parquet 파일은 Git LFS로 관리됩니다 (`git lfs install`을 안 했으면 push가 거부될 수 있습니다).
+- GitHub은 100MB가 넘는 일반 파일을 받지 않습니다. csv가 그만큼 크면 parquet으로 바꿔 저장합니다.
+- 저장소가 공개이므로, 재배포가 금지된 데이터는 가공한 것도 올리지 않습니다.
 
 ```python
 df.to_parquet("../data/processed/sales_clean.parquet")
@@ -124,7 +127,7 @@ df = load_raw("sales.csv")
 3. `02_preprocessing`에서 정리한 결과를 `data/processed/`에 저장
 4. `03_modeling`, `04_forecast`에서 processed 데이터로 모델 학습·평가
 5. 반복해서 쓰는 코드는 `src/`로 옮기기
-6. 브랜치에서 커밋·push한 뒤 PR → 팀원 1명 리뷰 → Squash 머지 ([협업 규칙](CONTRIBUTING.md))
+6. 브랜치에서 커밋 → `conda run -n bigdata ruff check --fix .` → push → PR → 팀원 1명 승인 → Squash 머지 ([협업 규칙](CONTRIBUTING.md))
 
 ## git에 올라가지 않는 것
 

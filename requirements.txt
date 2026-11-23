@@ -1,6 +1,5 @@
 # Python 3.12. 버전을 바꾸면 모든 팀원이 다시 설치해야 하니 PR에 적어 주세요.
 # 확인: conda run -n bigdata python check_env.py
-# 바꾼 뒤에는 CI용 lock도 다시 만들어 같이 커밋: conda run -n bigdata python scripts/lock_ci.py
 
 # 데이터 처리
 numpy==2.5.5
@@ -30,7 +29,10 @@ jupyterlab==4.6.6
 ipykernel==7.4.0
 openpyxl==3.1.5
 
-# 타입 검사 (mypy, CI에서도 사용)
+# 코드 검사: CI(lint 잡)가 이 버전을 그대로 읽어 쓴다. 올리면 CI도 같이 바뀐다
+ruff==0.17.5
+
+# 타입 검사 (선택, 로컬에서만. CI에서는 돌리지 않는다)
 mypy==2.4.1
 pandas-stubs==3.1.0.261029
 types-seaborn==0.13.2.20240417
