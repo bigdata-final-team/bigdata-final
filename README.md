@@ -23,18 +23,19 @@
 
 ## 환경
 
-conda 환경 `bigdata` (Python 3.12)를 사용합니다. conda는 PowerShell에서만 동작합니다.
+conda 환경 `bigdata-final` (Python 3.12, conda-forge)을 사용합니다. 패키지와 버전은 [`environment.yml`](environment.yml)에 있습니다. conda는 PowerShell에서만 동작합니다.
 
 ```powershell
 # 처음 한 번만
 git lfs install   # png·jpg·parquet를 Git LFS로 올리기 위해 PC마다 한 번
-conda create -n bigdata -c conda-forge --override-channels python=3.12 pip
-conda run -n bigdata python -m pip install -r requirements.txt
-conda run -n bigdata python -m ipykernel install --user --name bigdata --display-name bigdata
+conda env create -f environment.yml
+conda run -n bigdata-final python -m ipykernel install --user --name bigdata-final --display-name bigdata-final
 
 # 설치 확인 (라이브러리 버전 출력 + 랜덤포레스트·Prophet 학습 테스트)
-conda run -n bigdata python check_env.py
+conda run -n bigdata-final python check_env.py
 ```
+
+VS Code와 PyCharm의 인터프리터도 `bigdata-final`로 선택합니다.
 
 | 용도 | 라이브러리 |
 |------|-----------|
@@ -46,7 +47,11 @@ conda run -n bigdata python check_env.py
 | 노트북·엑셀 | jupyterlab, ipykernel, openpyxl |
 | 코드 검사 | ruff (CI와 같은 버전), mypy (선택) |
 
-라이브러리를 추가할 때는 `conda run -n bigdata python -m pip install <패키지>`로 설치한 뒤 `requirements.txt`에도 한 줄 추가합니다.
+라이브러리를 추가하거나 버전을 바꿀 때는 `environment.yml`과 `requirements.txt`에 **같은 버전**으로 한 줄씩 적고, 아래 명령으로 반영합니다. 두 파일이 어긋나면 `check_env.py`가 "불일치"로 알려 줍니다. conda-forge에 없는 패키지만 `environment.yml`의 `- pip:` 아래에 적습니다.
+
+```powershell
+conda env update -n bigdata-final -f environment.yml --prune
+```
 
 한글이 깨지면 `$env:PYTHONIOENCODING='utf-8'`을 먼저 실행합니다.
 
@@ -59,8 +64,9 @@ bigdata-final/
 │  └─ processed/   전처리를 마친 데이터 (git 포함)
 ├─ notebooks/      탐색·시각화·실험용 Jupyter 노트북
 ├─ src/            여러 노트북에서 같이 쓰는 함수 (.py)
-├─ check_env.py    환경 설치 확인 스크립트
-└─ requirements.txt
+├─ check_env.py      환경 설치 확인 스크립트
+├─ environment.yml   conda env 정의 (로컬 설치용)
+└─ requirements.txt  같은 버전 목록 (check_env.py와 CI가 읽음)
 ```
 
 ### data/raw/ — 원본 데이터
@@ -93,7 +99,7 @@ notebooks/
 └─ 04_forecast.ipynb        시계열 예측 (prophet)
 ```
 
-- 노트북을 열 때 커널은 **bigdata**를 선택합니다 (VS Code 오른쪽 위 커널 선택, 또는 `jupyter lab`).
+- 노트북을 열 때 커널은 **bigdata-final**을 선택합니다 (VS Code 오른쪽 위 커널 선택, 또는 `jupyter lab`).
 - 노트북 안에서 경로는 `notebooks/` 기준이므로 데이터는 `../data/...`로 접근합니다.
 - 같은 코드를 두 번 이상 복사하게 되면 `src/`로 옮길 때입니다.
 
@@ -127,7 +133,7 @@ df = load_raw("sales.csv")
 3. `02_preprocessing`에서 정리한 결과를 `data/processed/`에 저장
 4. `03_modeling`, `04_forecast`에서 processed 데이터로 모델 학습·평가
 5. 반복해서 쓰는 코드는 `src/`로 옮기기
-6. 브랜치에서 커밋 → `conda run -n bigdata ruff check --fix .` → push → PR → 팀원 1명 승인 → Squash 머지 ([협업 규칙](CONTRIBUTING.md))
+6. 브랜치에서 커밋 → `conda run -n bigdata-final ruff check --fix .` → push → PR → 팀원 1명 승인 → Squash 머지 ([협업 규칙](CONTRIBUTING.md))
 
 ## git에 올라가지 않는 것
 
