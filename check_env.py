@@ -1,12 +1,14 @@
 """환경 점검: Python 버전, requirements.txt 고정 버전과 설치 버전 비교, 모델 학습 테스트.
 
-실행: conda run -n bigdata python check_env.py
+실행: conda run -n bigdata-final python check_env.py
 문제가 하나라도 있으면 마지막에 모아서 보여 주고 종료 코드 1로 끝난다.
 """
 
 from __future__ import annotations
 
 import os
+import shutil
+import subprocess
 import sys
 from importlib import metadata
 from pathlib import Path
@@ -49,6 +51,27 @@ def installer_of(name: str) -> str:
     return (text or "?").strip()
 
 
+def installed_version(name: str) -> tuple[str, str]:
+    """(설치 버전, 설치 도구). 설치되지 않았으면 ("(없음)", "-").
+
+    conda-forge의 ruff처럼 파이썬 패키지 정보 없이 실행 파일만 설치하는 패키지는
+    env 안의 `<이름> --version` 출력에서 버전을 읽는다.
+    """
+    try:
+        return metadata.version(name), installer_of(name)
+    except metadata.PackageNotFoundError:
+        pass
+    env_bins = [Path(sys.prefix) / d for d in ("Scripts", "Library/bin", "bin")]
+    exe = shutil.which(name, path=os.pathsep.join(map(str, env_bins)))
+    if exe is None:
+        return "(없음)", "-"
+    result = subprocess.run(
+        [exe, "--version"], capture_output=True, text=True, timeout=30, check=False
+    )
+    words = result.stdout.split()
+    return (words[-1] if words else "?"), "exe"
+
+
 def check_python() -> None:
     section("Python")
     current = sys.version_info[:3]
@@ -57,7 +80,7 @@ def check_python() -> None:
     if current[:2] != EXPECTED_PYTHON:
         want = ".".join(map(str, EXPECTED_PYTHON))
         problems.append(
-            f"Python {want}.x 필요, 현재 {'.'.join(map(str, current))} (conda env 'bigdata'로 실행했는지 확인)"
+            f"Python {want}.x 필요, 현재 {'.'.join(map(str, current))} (conda env 'bigdata-final'로 실행했는지 확인)"
         )
 
     # python.exe를 직접 실행하면 env가 활성화되지 않아 CmdStan(Prophet)·DLL 경로가 잡히지 않는다.
@@ -65,7 +88,7 @@ def check_python() -> None:
     print(f"활성 env {conda_prefix or '(없음)'}")
     if not conda_prefix or Path(conda_prefix).resolve() != Path(sys.prefix).resolve():
         problems.append(
-            "conda env가 활성화되지 않음: 'conda run -n bigdata python check_env.py'로 실행"
+            "conda env가 활성화되지 않음: 'conda run -n bigdata-final python check_env.py'로 실행"
         )
 
 
@@ -75,10 +98,7 @@ def check_versions() -> None:
     width = max((len(name) for name, _ in pins), default=10)
     print(f"{'패키지':<{width}}  {'고정':<22}{'설치':<22}{'설치 도구':<10}결과")
     for name, wanted in pins:
-        try:
-            installed = metadata.version(name)
-        except metadata.PackageNotFoundError:
-            installed = "(없음)"
+        installed, tool = installed_version(name)
         if installed == wanted:
             status = "OK"
         elif installed == "(없음)":
@@ -87,9 +107,7 @@ def check_versions() -> None:
         else:
             status = "불일치"
             problems.append(f"{name}: 설치 {installed}, 필요 {wanted}")
-        print(
-            f"{name:<{width}}  {wanted:<22}{installed:<22}{installer_of(name):<10}{status}"
-        )
+        print(f"{name:<{width}}  {wanted:<22}{installed:<22}{tool:<10}{status}")
 
 
 def check_training() -> None:
@@ -137,7 +155,7 @@ def main() -> int:
     print(f"문제 {len(problems)}개:")
     for p in problems:
         print(f"  - {p}")
-    print("\n고치는 법: conda run -n bigdata python -m pip install -r requirements.txt")
+    print("\n고치는 법: conda env update -n bigdata-final -f environment.yml --prune")
     return 1
 
 

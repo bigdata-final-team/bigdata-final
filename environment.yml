@@ -1,0 +1,45 @@
+# conda env 정의. 처음 한 번: conda env create -f environment.yml
+# 고친 뒤 반영: conda env update -n bigdata-final -f environment.yml --prune
+# 버전은 requirements.txt와 똑같이 맞춘다. check_env.py가 requirements.txt 기준으로 설치 버전을 확인하고,
+# CI(lint 잡)는 requirements.txt의 ruff 버전을 읽는다. 하나를 바꾸면 다른 하나도 같이 바꾼다.
+name: bigdata-final
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python=3.12
+  - pip
+
+  # 데이터 처리
+  - numpy=2.5.5
+  - pandas=3.1.1
+  - polars=2.1.0
+  - pyarrow=26.0.1
+
+  # 통계
+  - scipy=1.18.1
+  - statsmodels=0.15.0
+
+  # 기계학습
+  - scikit-learn=1.9.1
+  - xgboost=3.4.1
+  - lightgbm=4.7.0
+
+  # 시계열 예측
+  - prophet=1.5.0
+
+  # 시각화
+  - matplotlib=3.11.2
+  - seaborn=0.13.2
+  - plotly=7.1.0
+
+  # 노트북·엑셀
+  - jupyterlab=4.6.6
+  - ipykernel=7.4.0
+  - openpyxl=3.1.5
+
+  # 코드 검사 (ruff는 CI와 같은 버전, mypy는 선택)
+  - ruff=0.17.5
+  - mypy=2.4.1
+  - pandas-stubs=3.1.0.261029
+  - types-seaborn=0.13.2.20240417
