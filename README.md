@@ -83,7 +83,7 @@
 
 ## 팀이 정할 것 (임시값)
 
-아직 확정하지 않은 값입니다. 임시값으로 진행한 결과에는 임시값임을 표시하고, 확정되면 이 표를 고칩니다. 노트북마다 값을 따로 적지 말고 `src/` 아래 한 파일(예: `src/config.py`)에 상수로 두고 불러 씁니다.
+아직 확정하지 않은 값입니다. 임시값으로 진행한 결과에는 임시값임을 표시하고, 확정되면 이 표를 고칩니다. 노트북마다 값을 따로 적지 말고 `src/config.py`의 상수를 불러 씁니다. 확정되면 그 파일 한 곳만 고칩니다.
 
 | 항목 | 임시값 | 단계 |
 |------|--------|:----:|
@@ -158,9 +158,11 @@ conda env update -n bigdata-final -f environment.yml --prune
 bigdata-final/
 ├─ data/
 │  ├─ raw/         원본 데이터. 데이터셋별 폴더에 받은 그대로 둔다 (git 제외)
+│  ├─ interim/     대여이력 월별 parquet 같은 큰 중간 결과 (git 제외, src가 만든다)
 │  └─ processed/   전처리·집계를 마친 데이터 (git 포함)
 ├─ notebooks/      분석 단계별 Jupyter 노트북
 ├─ src/            여러 노트북에서 같이 쓰는 함수와 설정값 (.py)
+├─ figures/        발표용 그림 (viz.save_fig가 저장)
 ├─ check_env.py      환경 설치 확인 스크립트
 ├─ environment.yml   conda env 정의 (로컬 설치용)
 └─ requirements.txt  같은 버전 목록 (check_env.py와 CI가 읽음)
@@ -174,7 +176,7 @@ bigdata-final/
 data/raw/
 ├─ usage_monthly/      이용정보(월별)        OA-15248
 ├─ usage_hourly/       이용정보(시간대별)    OA-15245
-├─ rentals/            대여이력              OA-15182
+├─ rent_history/       대여이력              OA-15182
 ├─ stations/           대여소 정보           OA-13252
 ├─ new_members/        신규가입자(일별)      OA-15243
 ├─ weather/            기상청 ASOS
@@ -183,7 +185,7 @@ data/raw/
 └─ availability/       대여가능 수량         OA-22382 (선택)
 ```
 
-- 아직 만들지 않은 폴더(`usage_hourly`, `rentals`, `weather`, `availability`)의 이름은 제안입니다. 받을 때 이 이름에 맞춥니다.
+- `src/loaders.py`가 이 폴더 이름으로 파일을 찾습니다. 아직 만들지 않은 폴더(`usage_hourly`, `weather`)도 받을 때 이 이름에 맞춥니다.
 - 원본은 절대 덮어쓰지 않습니다. 정리한 결과는 항상 `data/processed/`에 새 파일로 저장합니다. 그래야 실수해도 원본에서 다시 시작할 수 있습니다.
 - 용량이 커서 git에 올리지 않습니다. 대신 아래 데이터 출처의 **받은 파일 기록** 표에 받은 범위와 날짜를 적어 두면 다른 컴퓨터에서도 같은 데이터를 다시 받을 수 있습니다.
 - 대여이력은 2024년 파일 하나가 zip으로 약 2GB입니다. 디스크 여유 공간을 먼저 확인합니다.
@@ -196,9 +198,15 @@ data/raw/
 - 저장소가 공개이므로, 재배포가 제한된 데이터는 가공한 것도 올리지 않습니다. 서울시 역사마스터는 원본과 역 좌표를 올리지 않고, 대여소별 역 인근 여부 같은 결과값만 올립니다.
 
 ```python
-df.to_parquet("../data/processed/routes_2024.parquet")
-df = pd.read_parquet("../data/processed/routes_2024.parquet")
+loaders.save_parquet(df, "routes_2024")            # data/processed/routes_2024.parquet
+df = loaders.read_parquet("routes_2024")
+loaders.save_parquet(df, "tmp", where="interim")   # 올리지 않을 중간 결과는 data/interim/
 ```
+
+### data/interim/ — 큰 중간 결과
+
+- `loaders.rent_history_to_parquet()`가 대여이력 zip을 풀지 않고 읽어 `data/interim/rent_history/2024-01.parquet`처럼 달마다 저장합니다. 대여가능 수량도 같은 방식(`availability/`)입니다.
+- 원본에서 다시 만들 수 있는 파일이라 git에 올리지 않습니다. 이미 만든 달은 건너뛰므로 노트북을 다시 실행해도 빠릅니다.
 
 ### notebooks/ — 분석 노트북
 
@@ -219,26 +227,39 @@ df = pd.read_parquet("../data/processed/routes_2024.parquet")
 
 ### src/ — 공용 코드
 
-여러 노트북에서 쓰는 함수와 [팀이 정할 것](#팀이-정할-것-임시값)의 설정값을 `.py` 파일로 모아 둡니다. 예:
+여러 노트북에서 쓰는 함수와 [팀이 정할 것](#팀이-정할-것-임시값)의 설정값을 모아 둔 곳입니다. 노트북 첫 셀:
 
 ```python
-# src/preprocess.py
-import pandas as pd
-
-def load_raw(name: str, **kwargs) -> pd.DataFrame:
-    return pd.read_csv(f"../data/raw/{name}", **kwargs)
-```
-
-노트북에서 불러오기:
-
-```python
-import sys; sys.path.append("..")
 %load_ext autoreload
 %autoreload 2          # src/ 파일을 고치면 커널 재시작 없이 바로 반영
+import sys; sys.path.append("..")
 
-from src.preprocess import load_raw
-df = load_raw("new_members/서울특별시 공공자전거 신규가입자 정보일별_24.1-6.csv")
+import pandas as pd
+import matplotlib.pyplot as plt
+from src import config, loaders, calendar_kr, routes, metrics, geo, viz
+
+viz.setup_plot()       # 한글 폰트, 마이너스 기호, seaborn 스타일
 ```
+
+| 모듈 | 하는 일 | 주요 함수 |
+|------|---------|-----------|
+| `config` | 폴더 경로, 임시값(출퇴근 시간대·역 반경·분석 기간), 출처 문구 | `DATA_RAW`, `COMMUTE_HOURS`, `NEAR_STATION_M`, `SOURCES`, `provisional_note()` |
+| `loaders` | 원본 읽기. 인코딩·컬럼명·값 표기를 통일한다 | `load_usage_monthly()`, `load_new_members()`, `load_stations()`, `load_stations_union()`, `load_subway_ridership()`, `load_subway_stations()` |
+| | 대여이력·대여가능 수량 zip → 월별 parquet | `rent_history_to_parquet(2024)`, `load_rent_history(months=...)`, `availability_to_parquet()`, `load_availability()` |
+| | 저장·캐시 | `save_parquet()`, `read_parquet()`, `cached(name, 함수)` |
+| `calendar_kr` | 공휴일(2022~2026), 평일/주말·공휴일 구분, 출근/퇴근 시간대 | `add_time_columns(df, "대여일시")`, `day_kind()`, `count_days()`, `calendar_table()` |
+| `routes` | ② 출퇴근 노선 판별 준비: 노선 × 시간대별 평일 출현일수 | `build_route_stats(months)`, `flag_repeated_routes(stats, min_weekdays=...)`, `mark_reverse_pairs()` |
+| `metrics` | ② 교차 확인: 주말 기준선 통근 비중 | `hourly_daily_mean()`, `commute_share()`, `station_commute_index()` |
+| `geo` | 거리, 가장 가까운 지하철역, 역 인근 구분 | `add_station_proximity(대여소, 역)`, `haversine_m()` |
+| `viz` | 그래프·표 출처 표기, 숫자 축, 그림 저장 | `add_source(fig, "rent_history")`, `table_with_source()`, `comma_axis()`, `save_fig()` |
+
+원본마다 다른 표기를 이렇게 맞춥니다 (2026-11-25 받은 파일로 확인).
+
+- 대여소번호는 모두 5자리 문자열(`"00102"`). 파일에 따라 `102`와 `00102`가 섞여 있다.
+- 이용권은 원본 표기(`정기`, `정기권`, `일일(회원)`, `일일권` …)를 `이용권_대분류`(정기권·일일권·일일권(비회원)·단체권·가족권·기타)로 묶는다.
+- 연령대 `10대`와 `~10대`는 `~10대`로, 성별 `m`/`f`는 대문자로, 빈칸과 `\N`은 결측으로 바꾼다.
+- 확장자만 .csv인 엑셀 파일, 머리글 없는 파일, UTF-8과 cp949가 섞인 것도 알아서 읽는다.
+- 원본에 있는 이상값(생년 0·2099, 센터·정비 대여소 코드 등)은 지우지 않는다. 각 함수 설명에 적어 두었으니 분석에서 기준을 정해 거른다.
 
 ## 분석 규칙
 
@@ -249,39 +270,32 @@ df = load_raw("new_members/서울특별시 공공자전거 신규가입자 정�
 
 ### 한글 폰트와 출처 표기
 
+`viz.setup_plot()`이 Windows(맑은 고딕)·macOS·Linux에서 한글 폰트를 찾아 설정합니다. 출처는 `config.SOURCES`의 키로 적습니다.
+
 ```python
-import matplotlib.pyplot as plt
-import seaborn as sns
-
-sns.set_theme(style="whitegrid", font="Malgun Gothic")  # Windows 한글 폰트. set_theme 뒤에 폰트를 따로 바꾸지 않는다
-plt.rcParams["axes.unicode_minus"] = False               # 마이너스 기호 깨짐 방지
-
 fig, ax = plt.subplots()
 # ... 그래프 그리기 ...
-fig.text(0.99, 0.01, "자료: 서울 열린데이터광장, 공공자전거 대여이력 정보",
-         ha="right", fontsize=8)
+viz.add_source(fig, "rent_history", "stations", note=config.provisional_note())  # 출처 + 임시값 안내
+viz.save_fig(fig, "03_출퇴근노선_시간대")     # figures/03_출퇴근노선_시간대.png
+
+viz.table_with_source(df, "usage_monthly", precision=1)   # 표 아래에 출처를 단다
 ```
 
 ### 대용량 데이터 읽기
 
-대여이력은 한 번에 읽으면 메모리가 부족합니다. 필요한 컬럼만 골라 청크 단위로 읽고, 청크마다 날짜 × 시간대 × 노선으로 집계한 뒤 parquet로 저장합니다. 이 집계표로 노선이 평일 며칠에 나타났는지 셀 수 있습니다.
+대여이력은 한 번에 읽으면 메모리가 부족합니다. `loaders`가 zip을 풀지 않고 필요한 컬럼만 청크로 읽어 달마다 parquet로 저장합니다. 시험해 본 환경에서 2024년 12월분(csv 약 430MB)이 30초쯤 걸렸고, 1년이면 그 열 배 이상 걸립니다.
 
 ```python
-import pandas as pd
+loaders.rent_history_to_parquet(2024, months=["2024-05"])   # 처음엔 한 달로 시험
+loaders.rent_history_to_parquet(2024)                       # 1년 전체 (이미 만든 달은 건너뜀)
 
-# 예시 컬럼명. 실제 이름은 파일 헤더를 먼저 확인한다
-cols = ["대여일시", "대여 대여소번호", "반납대여소번호"]
-parts = []
-for chunk in pd.read_csv("../data/raw/rentals/대여이력_2024_01.csv", usecols=cols,
-                         chunksize=1_000_000, encoding="cp949"):  # 인코딩은 파일마다 다를 수 있다
-    t = pd.to_datetime(chunk["대여일시"])
-    keys = [t.dt.date.rename("날짜"), t.dt.hour.rename("시"),
-            chunk["대여 대여소번호"].rename("출발"), chunk["반납대여소번호"].rename("도착")]
-    parts.append(chunk.groupby(keys).size())
+rent = loaders.load_rent_history(months=["2024-05"])        # 필요한 달·컬럼만 읽기
+rent = calendar_kr.add_time_columns(rent, "대여일시")        # 날짜·요일·시간대·일구분·시간구분
 
-routes = (pd.concat(parts).groupby(level=[0, 1, 2, 3]).sum()
-          .rename("이용건수").reset_index())
-routes.to_parquet("../data/processed/routes_2024_01.parquet")
+# ② 노선 × 시간대별 평일 출현일수 (한 달씩 읽어 합치므로 1년도 메모리에 부담이 적다)
+stats = routes.build_route_stats([f"2024-{m:02d}" for m in range(1, 13)])
+flag = routes.flag_repeated_routes(stats, min_weekdays=5)   # 반복 기준은 팀이 정할 값 (예시 5일)
+stats["역방향반복"] = routes.mark_reverse_pairs(stats, flag)
 ```
 
 ## 작업 흐름
@@ -299,6 +313,7 @@ routes.to_parquet("../data/processed/routes_2024_01.parquet")
 `.gitignore`에 정의되어 있습니다.
 
 - `data/raw/` 안의 파일 (`.gitkeep`만 올라감)
+- `data/interim/` (대여이력 월별 parquet 등, 원본에서 다시 만들 수 있음)
 - `.ipynb_checkpoints/`, `__pycache__/`, `.mypy_cache/`
 - `.vscode/`, `.idea/` 등 IDE 설정, `.env`(비밀키), `.claude/settings.local.json`
 
@@ -344,5 +359,5 @@ routes.to_parquet("../data/processed/routes_2024_01.parquet")
 | `subway_ridership/` | OA-12921 | 2024년 1~12월 CSV, 2025년(20251231 기준) CSV | | |
 | `subway_stations/` | 역사마스터 | CSV 1개 (저장소에 올리지 않음) | | |
 | `usage_hourly/` | OA-15245 | 아직 안 받음 | | |
-| `rentals/` | OA-15182 | 아직 안 받음 | | |
+| `rent_history/` | OA-15182 | 아직 안 받음 | | |
 | `weather/` | ASOS | 아직 안 받음 | | |
