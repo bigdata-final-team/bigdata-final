@@ -12,6 +12,7 @@ docs 2-1 원칙대로 공휴일은 주말과 같은 "주말·공휴일"로 분�
 
 from __future__ import annotations
 
+import re
 import warnings
 from collections.abc import Iterable
 
@@ -137,6 +138,23 @@ LABOR_DAYS_BEFORE_2026: dict[str, str] = {
 }
 
 
+def period_start(value: str | pd.Timestamp) -> pd.Timestamp:
+    """기간의 첫날. "2024" → 2024-01-01, "2024-06" → 2024-06-01, "2024-06-15" → 그날."""
+    if isinstance(value, str) and re.fullmatch(r"\d{4}(-\d{2})?", value.strip()):
+        return pd.Period(value.strip()).start_time
+    return pd.Timestamp(value).normalize()
+
+
+def period_end(value: str | pd.Timestamp) -> pd.Timestamp:
+    """기간의 마지막 날(자정). "2024" → 2024-12-31, "2024-06" → 2024-06-30, "2024-06-15" → 그날.
+
+    end="2024-12"를 12월 1일로 잘못 읽어 12월 나머지 날이 빠지는 일을 막는다.
+    """
+    if isinstance(value, str) and re.fullmatch(r"\d{4}(-\d{2})?", value.strip()):
+        return pd.Period(value.strip()).end_time.normalize()
+    return pd.Timestamp(value).normalize()
+
+
 def _as_dates(dates: Iterable) -> pd.Series:
     s = pd.Series(pd.to_datetime(pd.Series(dates)).to_numpy())
     return s.dt.normalize()
@@ -194,8 +212,8 @@ def calendar_table(
     end: str | pd.Timestamp,
     labor_day_as_holiday: bool = False,
 ) -> pd.DataFrame:
-    """start~end(양 끝 포함) 하루 한 줄: 날짜, 요일, 공휴일명, 일구분."""
-    days = pd.date_range(pd.Timestamp(start).normalize(), pd.Timestamp(end).normalize())
+    """start~end(양 끝 포함) 하루 한 줄: 날짜, 요일, 공휴일명, 일구분. end="2024-12"는 12월 31일까지."""
+    days = pd.date_range(period_start(start), period_end(end))
     names = {**KR_HOLIDAYS, **(LABOR_DAYS_BEFORE_2026 if labor_day_as_holiday else {})}
     return pd.DataFrame(
         {
@@ -212,7 +230,7 @@ def count_days(
     end: str | pd.Timestamp,
     labor_day_as_holiday: bool = False,
 ) -> pd.Series:
-    """기간 안의 평일 수와 주말·공휴일 수. 하루 평균을 낼 때 분모로 쓴다."""
+    """기간 안의 평일 수와 주말·공휴일 수. 하루 평균을 낼 때 분모로 쓴다. end="2024-12"는 12월 31일까지."""
     cal = calendar_table(start, end, labor_day_as_holiday)
     return cal["일구분"].value_counts().reindex(DAY_KINDS, fill_value=0).rename("일수")
 

@@ -17,7 +17,15 @@ from collections.abc import Iterable
 import pandas as pd
 
 from . import config
-from .calendar_kr import DAY_KINDS, OFFDAY, WEEKDAY, count_days, day_kind
+from .calendar_kr import (
+    DAY_KINDS,
+    OFFDAY,
+    WEEKDAY,
+    count_days,
+    day_kind,
+    period_end,
+    period_start,
+)
 
 HOURS = tuple(range(24))
 
@@ -49,14 +57,15 @@ def hourly_daily_mean(
 
     하루 평균 = 기간 안 합계 ÷ 기간 안 그 일구분의 날 수. 이용이 0건인 날도 날 수에 들어간다
     (그래서 groupby().mean()과 다르다). 0건인 시간대는 0으로 채운다.
+    start/end는 "2024-01"처럼 달로 주면 그 달 첫날·마지막 날로 읽는다.
     count_col=None이면 행 하나를 1건으로 센다(대여이력). start/end를 생략하면 데이터의 첫날~마지막 날.
 
     반환: [by..., 일구분, 시간대, 합계, 일수, 하루평균]
     """
     keys = _as_list(by)
     dates = pd.to_datetime(df[date_col]).dt.normalize()
-    start = pd.Timestamp(start) if start is not None else dates.min()
-    end = pd.Timestamp(end) if end is not None else dates.max()
+    start = period_start(start) if start is not None else dates.min()
+    end = period_end(end) if end is not None else dates.max()
     inside = ((dates >= start) & (dates <= end)).to_numpy()
 
     tmp = pd.DataFrame(
@@ -83,7 +92,7 @@ def hourly_daily_mean(
     out = total.rename("합계").reset_index()
     out["일구분"] = pd.Categorical(out["일구분"], categories=DAY_KINDS, ordered=True)
     out["일수"] = out["일구분"].map(ndays.to_dict()).astype("int64")
-    out["하루평균"] = out["합계"] / out["일수"]
+    out["하루평균"] = out["합계"] / out["일수"].where(out["일수"] > 0)
     return out
 
 

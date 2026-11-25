@@ -67,24 +67,24 @@ def build_route_stats(
     """rent_history_to_parquet()로 만든 월별 parquet를 한 달씩 읽어 노선 통계를 합친다.
 
     달마다 날짜가 겹치지 않으므로 출현일수도 그대로 더하면 된다. 메모리를 아끼려고 한 달씩 처리한다.
-    결과의 attrs["평일일수"], attrs["휴일일수"]에 기간 전체 날 수를 남긴다(출현비율 계산용).
+    결과의 attrs["평일일수"], attrs["휴일일수"]에 고른 달들의 날 수 합을 남긴다(출현비율 계산용).
+    attrs는 parquet로 저장하면 사라지므로 필요하면 따로 적어 둔다.
     """
     months = sorted(months)
     total: pd.DataFrame | None = None
+    days = pd.Series(0, index=[WEEKDAY, OFFDAY])
     for ym in months:
         rent = loaders.load_rent_history(
             months=[ym], columns=["대여일시", "대여소번호", "반납대여소번호"]
         )
         part = _route_counts(rent, labor_day_as_holiday)
         total = part if total is None else total.add(part, fill_value=0)
+        days = days + count_days(ym, ym, labor_day_as_holiday)
         if verbose:
             print(f"  {ym}: 대여 {len(rent):,}건, 누적 노선×시간대 {len(total):,}개")
     if total is None:
         raise ValueError("months가 비어 있다")
     out = _finish(total.fillna(0).astype("int64").reset_index())
-    start = pd.Period(months[0]).start_time
-    end = pd.Period(months[-1]).end_time
-    days = count_days(start, end, labor_day_as_holiday)
     out.attrs.update({"평일일수": int(days[WEEKDAY]), "휴일일수": int(days[OFFDAY])})
     return out
 

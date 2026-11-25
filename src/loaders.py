@@ -27,6 +27,7 @@ from pathlib import Path
 import pandas as pd
 
 from . import config
+from .calendar_kr import period_end, period_start
 
 # ---- 값 표기 통일 기준 ---------------------------------------------------------
 AGE_ORDER = ("~10대", "20대", "30대", "40대", "50대", "60대", "70대이상", "기타")
@@ -173,25 +174,13 @@ def _rename_known(
     return df.set_axis(_standard_names(df.columns, mapping, where), axis=1)
 
 
-def _bound(value: str | None, side: str) -> pd.Timestamp | None:
-    """ "2024", "2024-06"은 그 기간의 처음(start)이나 끝(end)으로, "2024-06-15"는 그날로 바꾼다."""
-    if value is None:
-        return None
-    if re.fullmatch(r"\d{4}(-\d{2})?", str(value)):
-        period = pd.Period(str(value))
-        return period.start_time if side == "start" else period.end_time
-    ts = pd.Timestamp(value)
-    return ts if side == "start" else ts + pd.Timedelta(days=1) - pd.Timedelta(1, "ns")
-
-
 def _period_mask(dates: pd.Series, start: str | None, end: str | None) -> pd.Series:
     """start~end(양 끝 포함) 안이면 True. end="2024-06"이면 6월 30일까지 들어간다."""
     mask = pd.Series(True, index=dates.index)
-    lo, hi = _bound(start, "start"), _bound(end, "end")
-    if lo is not None:
-        mask &= dates >= lo
-    if hi is not None:
-        mask &= dates <= hi
+    if start is not None:
+        mask &= dates >= period_start(start)
+    if end is not None:
+        mask &= dates < period_end(end) + pd.Timedelta(days=1)
     return mask
 
 
@@ -232,7 +221,7 @@ def load_usage_monthly(
         month = pd.to_datetime(
             df["대여월"].str.replace("-", "", regex=False).str[:6], format="%Y%m"
         )
-        for m in month.unique():
+        for m in pd.DatetimeIndex(month.unique()):
             if m in seen:
                 warnings.warn(
                     f"{m:%Y-%m}이 {seen[m]}와 {path.name}에 둘 다 있다", stacklevel=2
@@ -280,6 +269,7 @@ def load_new_members(start: str | None = None, end: str | None = None) -> pd.Dat
     - 2019년 말 시스템 개편 전에는 성별을 모으지 않았다(2018~2022 엑셀 파일의 메모). 그 기간 성별은 결측이다.
     """
     frames = []
+    seen: dict[str, str] = {}
     folder = config.DATA_RAW / "new_members"
     for path in sorted(
         p for p in folder.iterdir() if p.suffix.lower() in (".csv", ".xlsx")
@@ -292,6 +282,15 @@ def load_new_members(start: str | None = None, end: str | None = None) -> pd.Dat
         ):  # 머리글 줄이면 뺀다 (머리글 없는 파일도 있음)
             raw = raw.iloc[1:]
         raw = raw[raw["가입일자"].str.strip() != ""]
+        days = set(raw["가입일자"].str.strip().str[:10])
+        overlap = sorted(days & set(seen))
+        if overlap:
+            warnings.warn(
+                f"{path.name}와 {seen[overlap[0]]}에 같은 날짜가 있다({overlap[0]} 등 {len(overlap)}일). "
+                "같은 파일을 두 번 받았는지 확인할 것",
+                stacklevel=2,
+            )
+        seen.update(dict.fromkeys(days, path.name))
         frames.append(raw)
     df = pd.concat(frames, ignore_index=True)
 
@@ -640,6 +639,8 @@ def cached(
 
     원본을 읽는 데 오래 걸리는 표를 노트북에서 다시 실행할 때 쓴다(원본이 바뀌면 refresh=True).
         usage = loaders.cached("usage_monthly", loaders.load_usage_monthly)
+    인자를 바꿔 부를 때는 name도 바꾼다. 이름이 같으면 예전 결과를 그대로 읽는다.
+        h1 = loaders.cached("usage_2024h1", lambda: loaders.load_usage_monthly("2024-01", "2024-06"))
     """
     path = _parquet_path(name, "interim")
     if path.exists() and not refresh:
