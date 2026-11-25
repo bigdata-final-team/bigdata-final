@@ -17,7 +17,7 @@
    | `docs/` | README 등 문서 |
 3. **커밋**: 작게, 무엇을 했는지 한 줄로. 예: `전처리: 결측치 중앙값 대체`
 4. **PR**: push 전에 `conda run -n bigdata-final ruff check --fix .`로 검사합니다 ([코드 검사](#코드-검사)). 첫 push는 `git push -u origin <브랜치>`, 그다음 GitHub에서 PR을 엽니다. 템플릿 체크리스트를 채웁니다.
-5. **리뷰**: 팀원 1명이 확인하고 Approve합니다. 승인과 필수 체크가 모두 통과해야 머지 버튼이 열립니다.
+5. **리뷰**: 팀원 1명이 확인하고 Approve합니다. 승인과 필수 체크가 모두 통과해야 머지 버튼이 열립니다. 조직 소유자가 연 PR은 소유자가 직접 리뷰하고 머지합니다 ([소유자 셀프 리뷰](#소유자-셀프-리뷰)).
 6. **머지**: **Squash and merge**만 사용합니다. GitHub의 브랜치는 자동 삭제되고, 내 PC의 브랜치는 직접 지웁니다.
    ```powershell
    git switch main; git pull
@@ -30,7 +30,20 @@
 
 - `main`에 직접 push, 강제 push, 삭제가 막힙니다. 모든 변경은 PR로 들어갑니다.
 - PR 머지 조건: 승인 1명 + 필수 체크 `lint`, `SonarCloud Code Analysis` 통과.
-- 조직 소유자는 PR 화면에서 이 조건을 건너뛰고 머지할 수 있습니다. 팀원이 리뷰할 수 없는 급한 경우에만 씁니다. 직접 push는 소유자도 막힙니다.
+- 조직 소유자는 PR 화면에서 이 조건을 건너뛰고 머지할 수 있습니다(우회 머지). 직접 push는 소유자도 막힙니다.
+
+### 소유자 셀프 리뷰
+
+GitHub에서는 PR 작성자가 자기 PR을 Approve할 수 없습니다. 그래서 조직 소유자가 연 PR은 팀원 승인을 기다리지 않고, 소유자가 직접 리뷰한 뒤 우회 머지합니다.
+
+1. 필수 체크 `lint`, `SonarCloud Code Analysis`가 통과했는지 확인합니다. 우회 머지를 하면 체크도 함께 건너뛰어서 실패한 PR도 머지되니, 이 확인은 직접 챙깁니다.
+2. **Files changed**에서 변경을 처음부터 끝까지 읽습니다. 남길 말이 있으면 **Review changes → Comment**로 남깁니다 (본인 PR에서는 Approve를 고를 수 없습니다).
+3. 머지 버튼 위의 **Merge without waiting for requirements to be met (bypass rules)**를 체크하고 **Squash and merge**합니다. 터미널에서는 다음 명령을 씁니다.
+   ```powershell
+   gh pr merge <번호> --squash --admin
+   ```
+
+팀원이 연 PR은 지금처럼 승인을 받아 머지합니다.
 
 ## 노트북 규칙
 
@@ -63,7 +76,7 @@ ruff 버전은 `environment.yml`과 `requirements.txt`에 고정되어 있고, C
 
 | 대상 | 권한 | 비고 |
 |------|------|------|
-| 조직 소유자 | admin | 조직·저장소 설정, 팀원 초대, 급할 때 머지 조건 건너뛰기 |
+| 조직 소유자 | admin | 조직·저장소 설정, 팀원 초대, 본인 PR은 셀프 리뷰 후 우회 머지 ([소유자 셀프 리뷰](#소유자-셀프-리뷰)) |
 | `dev` 팀 | `bigdata-final` write | 팀원은 이 팀에 넣어 초대합니다 |
 | 그 밖의 조직 멤버 | read | 조직 기본 권한 |
 
