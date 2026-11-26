@@ -128,7 +128,7 @@ git lfs install   # png·jpg·parquet를 Git LFS로 올리기 위해 PC마다 �
 conda env create -f environment.yml
 conda run -n bigdata-final python -m ipykernel install --user --name bigdata-final --display-name bigdata-final
 
-# 설치 확인 (라이브러리 버전 출력 + 랜덤포레스트·Prophet 학습 테스트)
+# 설치 확인 (라이브러리 버전 + 행렬 곱·그림 저장 + 랜덤포레스트·Prophet 학습 테스트)
 conda run -n bigdata-final python check_env.py
 ```
 
@@ -151,6 +151,8 @@ conda env update -n bigdata-final -f environment.yml --prune
 ```
 
 한글이 깨지면 `$env:PYTHONIOENCODING='utf-8'`을 먼저 실행합니다.
+
+numpy·scipy의 BLAS는 `environment.yml`의 `libblas` 줄로 OpenBLAS에 고정되어 있습니다. Windows 기본값인 MKL은 Jupyter 커널(env 활성화 없이 실행됨)에서 행렬 곱 한 번에 죽어, 그래프 셀마다 커널이 재시작됩니다. 이렇게 되면 위 `conda env update` 명령을 실행한 뒤 `check_env.py`의 "BLAS·그림 저장"이 OK인지 확인합니다.
 
 ## 폴더 구조
 

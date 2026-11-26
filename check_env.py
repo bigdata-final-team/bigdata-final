@@ -1,4 +1,4 @@
-"""환경 점검: Python 버전, requirements.txt 고정 버전과 설치 버전 비교, 모델 학습 테스트.
+"""환경 점검: Python 버전, requirements.txt 고정 버전과 설치 버전 비교, BLAS·그림 저장, 모델 학습 테스트.
 
 실행: conda run -n bigdata-final python check_env.py
 문제가 하나라도 있으면 마지막에 모아서 보여 주고 종료 코드 1로 끝난다.
@@ -15,6 +15,37 @@ from pathlib import Path
 
 EXPECTED_PYTHON = (3, 12)
 REQUIREMENTS = Path(__file__).with_name("requirements.txt")
+
+# 별도 프로세스에서 돌리는 점검. BLAS·OpenMP DLL이 어긋나면 예외가 아니라 프로세스 크래시
+# (Windows 0xC06D007F 등)로 나타나서, 같은 프로세스에서 돌리면 결과 요약도 못 남기고 죽는다.
+# matplotlib은 그림을 그릴 때마다 np.dot을 부르므로 BLAS가 깨지면 Jupyter 커널이 그래프 셀에서 죽는다.
+# Jupyter 커널처럼 env를 활성화하지 않은 상태로 돌린다 (kernel_like_env 참고).
+NATIVE_CHECKS = {
+    "BLAS 행렬 곱": """
+import numpy as np
+a = np.arange(1.0, 10.0).reshape(3, 3) + np.eye(3)
+assert np.allclose(np.dot(a, np.eye(3)), a)
+assert np.allclose(a @ np.linalg.solve(a, np.ones(3)), np.ones(3))
+try:
+    from threadpoolctl import threadpool_info
+    libs = [f"{i['internal_api']} {i['version']}" for i in threadpool_info() if i["user_api"] == "blas"]
+except ImportError:
+    libs = []
+print(f"BLAS 행렬 곱 ({', '.join(libs) or 'BLAS 종류 확인 불가'})  OK")
+""",
+    "matplotlib 그림 저장": """
+import io
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+fig, ax = plt.subplots()
+ax.plot([0, 1, 2], [0, 1, 4])
+buf = io.BytesIO()
+fig.savefig(buf, format="png")
+assert buf.getvalue().startswith(b"\\x89PNG")
+print("matplotlib 그림 저장 (Agg, png)  OK")
+""",
+}
 
 problems: list[str] = []
 
@@ -110,6 +141,68 @@ def check_versions() -> None:
         print(f"{name:<{width}}  {wanted:<22}{installed:<22}{tool:<10}{status}")
 
 
+def kernel_like_env() -> dict[str, str]:
+    """Jupyter 커널이 뜰 때처럼 env 활성화가 PATH에 넣은 경로(env 안 폴더)를 뺀 환경 변수.
+
+    kernelspec(kernel.json)은 env의 python.exe를 활성화 없이 바로 실행한다. 그래서
+    `conda run`으로는 통과하고 노트북에서만 죽는 DLL 문제가 있다 (MKL + llvm-openmp가 그랬다).
+    """
+    prefix = os.path.normcase(os.path.abspath(sys.prefix))
+
+    def in_env(entry: str) -> bool:
+        try:
+            full = os.path.normcase(os.path.abspath(entry))
+            return os.path.commonpath([prefix, full]) == prefix
+        except ValueError:  # Windows에서 드라이브가 다르면 commonpath가 실패한다
+            return False
+
+    entries = os.environ.get("PATH", "").split(os.pathsep)
+    path = os.pathsep.join(e for e in entries if e and not in_env(e))
+    return {**os.environ, "PATH": path, "PYTHONIOENCODING": "utf-8"}
+
+
+def run_isolated(label: str, code: str) -> bool:
+    """code를 새 파이썬 프로세스에서 실행한다. 예외든 크래시든 0이 아닌 종료 코드면 실패로 기록."""
+    try:
+        result = subprocess.run(
+            [sys.executable, "-X", "faulthandler", "-c", code],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            env=kernel_like_env(),
+            timeout=300,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        problems.append(f"{label}: 300초 안에 끝나지 않음")
+        print(f"{label}  실패 (시간 초과)")
+        return False
+    if result.returncode == 0:
+        print(result.stdout.strip())
+        return True
+
+    rc = result.returncode
+    code_text = f"시그널 {-rc}" if rc < 0 else f"0x{rc & 0xFFFFFFFF:08X}"
+    lines = [line for line in result.stderr.splitlines() if line.strip()]
+    # 크래시면 faulthandler의 "Windows fatal exception: ..." 줄, 예외면 마지막 줄이 원인이다
+    reason = next(
+        (line for line in lines if "fatal" in line.lower()),
+        lines[-1] if lines else "오류 출력 없음",
+    )
+    problems.append(
+        f"{label}: 프로세스가 종료 코드 {code_text}로 끝남 ({reason.strip()})"
+    )
+    print(f"{label}  실패 (종료 코드 {code_text})")
+    return False
+
+
+def check_native() -> bool:
+    section("BLAS·그림 저장 (별도 프로세스, Jupyter 커널처럼 env 활성화 없이)")
+    results = [run_isolated(label, code) for label, code in NATIVE_CHECKS.items()]
+    return all(results)
+
+
 def check_training() -> None:
     section("동작 테스트")
     import numpy as np
@@ -143,10 +236,16 @@ def check_training() -> None:
 def main() -> int:
     check_python()
     check_versions()
-    try:
-        check_training()
-    except Exception as exc:  # noqa: BLE001 - 라이브러리가 깨졌을 때 원인을 요약에 남긴다
-        problems.append(f"동작 테스트 실패: {type(exc).__name__}: {exc}")
+    native_ok = check_native()
+    if native_ok:
+        try:
+            check_training()
+        except Exception as exc:  # noqa: BLE001 - 라이브러리가 깨졌을 때 원인을 요약에 남긴다
+            problems.append(f"동작 테스트 실패: {type(exc).__name__}: {exc}")
+    else:
+        # Prophet·scikit-learn도 BLAS를 쓰므로 여기서 돌리면 이 프로세스가 요약 전에 죽을 수 있다
+        section("동작 테스트")
+        print("BLAS·그림 저장 점검이 실패해 건너뜀")
 
     section("결과")
     if not problems:
@@ -156,6 +255,11 @@ def main() -> int:
     for p in problems:
         print(f"  - {p}")
     print("\n고치는 법: conda env update -n bigdata-final -f environment.yml --prune")
+    if not native_ok:
+        print(
+            "BLAS 점검이 실패하면 위 명령 뒤 'conda list -n bigdata-final libblas'의 빌드가"
+            " *_openblas인지 확인 (README '환경')"
+        )
     return 1
 
 
