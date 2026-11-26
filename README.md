@@ -214,6 +214,7 @@ loaders.save_parquet(df, "tmp", where="interim")   # 올리지 않을 중간 결
 
 | 노트북 | 내용 | 담당 |
 |--------|------|------|
+| [`00_src_guide.ipynb`](notebooks/00_src_guide.ipynb) | `src/` 공용 함수 사용법. 실제 데이터로 실행한 예시이고 분석 결과가 아님 | |
 | `01_preprocessing.ipynb` | raw → processed (필요한 컬럼만 읽기, 청크 처리, 노선 집계) | |
 | `02_usage.ipynb` | ① 이용현황 | |
 | `03_routes.ipynb` | ② 출퇴근 노선 판별, 이용 유형 나누기 | |
@@ -232,14 +233,19 @@ loaders.save_parquet(df, "tmp", where="interim")   # 올리지 않을 중간 결
 ```python
 %load_ext autoreload
 %autoreload 2          # src/ 파일을 고치면 커널 재시작 없이 바로 반영
-import sys; sys.path.append("..")
+import sys
 
-import pandas as pd
+sys.path.append("..")
+
 import matplotlib.pyplot as plt
-from src import config, loaders, calendar_kr, routes, metrics, geo, viz
+import pandas as pd
+
+from src import calendar_kr, config, geo, loaders, metrics, routes, viz
 
 viz.setup_plot()       # 한글 폰트, 마이너스 기호, seaborn 스타일
 ```
+
+import 순서는 ruff의 정렬 규칙(I001)에 맞춘 것입니다. 순서가 다르면 CI `lint`가 실패하니 `ruff check --fix`로 고칩니다.
 
 | 모듈 | 하는 일 | 주요 함수 |
 |------|---------|-----------|
@@ -252,6 +258,8 @@ viz.setup_plot()       # 한글 폰트, 마이너스 기호, seaborn 스타일
 | `metrics` | ② 교차 확인: 주말 기준선 통근 비중 | `hourly_daily_mean()`, `commute_share()`, `station_commute_index()` |
 | `geo` | 거리, 가장 가까운 지하철역, 역 인근 구분 | `add_station_proximity(대여소, 역)`, `haversine_m()` |
 | `viz` | 그래프·표 출처 표기, 숫자 축, 그림 저장 | `add_source(fig, "rent_history")`, `table_with_source()`, `comma_axis()`, `save_fig()` |
+
+함수마다 무엇을 받고 무엇을 돌려주는지는 [`notebooks/00_src_guide.ipynb`](notebooks/00_src_guide.ipynb)에서 실제 데이터로 실행한 예시로 볼 수 있습니다.
 
 원본마다 다른 표기를 이렇게 맞춥니다 (2026-11-25 받은 파일로 확인).
 
