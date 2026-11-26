@@ -2,6 +2,7 @@
 # 고친 뒤 반영: conda env update -n bigdata-final -f environment.yml --prune
 # 버전은 requirements.txt와 똑같이 맞춘다. check_env.py가 requirements.txt 기준으로 설치 버전을 확인하고,
 # CI(lint 잡)는 requirements.txt의 ruff 버전을 읽는다. 하나를 바꾸면 다른 하나도 같이 바꾼다.
+# 예외: conda 전용인 libblas 한 줄은 requirements.txt에 없다 (아래 '데이터 처리' 주석).
 name: bigdata-final
 channels:
   - conda-forge
@@ -11,6 +12,13 @@ dependencies:
   - pip
 
   # 데이터 처리
+  # numpy·scipy의 BLAS는 OpenBLAS로 고정한다. Windows에서 기본으로 깔리는 MKL(2026.1)은 OpenMP로
+  # llvm-openmp의 libiomp5md.dll을 쓰는데, 이 DLL은 모든 함수를 libomp.dll로 넘기기만 한다. env를
+  # 활성화하지 않고 python.exe를 바로 실행하면(Jupyter 커널이 이렇게 뜬다) libomp.dll을 못 찾아
+  # np.dot 한 번에 프로세스가 죽는다(0xC06D007F). matplotlib 그림도 np.dot을 거쳐 그래프 셀마다 커널이 죽는다.
+  # libblas는 BLAS 종류를 고르는 conda 전용 패키지라 pip에는 없고, PyPI numpy·scipy 휠은 원래 OpenBLAS를
+  # 넣어 배포하므로 requirements.txt에는 적지 않는다 (적으면 check_env.py가 '없음'으로 보고한다).
+  - libblas=*=*openblas
   - numpy=2.5.5
   - pandas=3.1.1
   - polars=2.1.0

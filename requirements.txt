@@ -1,5 +1,6 @@
 # Python 3.12. environment.yml과 같은 버전으로 맞춘다. 버전을 바꾸면 모든 팀원이 다시 설치해야 하니 PR에 적어 주세요.
 # 확인: conda run -n bigdata-final python check_env.py
+# environment.yml의 libblas(BLAS를 OpenBLAS로 고정)는 conda 전용 패키지라 여기에 적지 않는다.
 
 # 데이터 처리
 numpy==2.5.5
